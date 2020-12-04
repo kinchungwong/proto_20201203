@@ -1,5 +1,6 @@
 classdef ImageHashPoints < handle
     properties
+        Id int32 {mustBeScalarOrEmpty}
         ImageInfo ImageFileInfo {mustBeScalarOrEmpty}
         HashValues uint32
         HashRows int32
@@ -11,6 +12,7 @@ classdef ImageHashPoints < handle
             if ~isa(imgProc, 'ImageHashProcessor')
                 error('imgProc');
             end
+            hp.Id = imgProc.ImageInfo.Id;
             hp.ImageInfo = imgProc.ImageInfo;
             sz = [imgProc.ImageInfo.Height, imgProc.ImageInfo.Width];
             [hp.HashRows, hp.HashCols] = ind2sub(sz, find(imgProc.Mask));
