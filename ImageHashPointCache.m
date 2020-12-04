@@ -43,6 +43,30 @@ classdef ImageHashPointCache < handle
                 end
             end
         end
+        
+        function ids = GetHasProcessedIds(hpcache)
+            numIds = length(hpcache.Ids);
+            ids = zeros(1, numIds, 'int32');
+            for k = 1:numIds
+                id = hpcache.Ids(k);
+                if hpcache.IdHasProcessed(id)
+                    ids(k) = id;
+                end
+            end
+            ids = ids(ids ~= 0);
+        end
+        
+        function ids = GetHasNotProcessedIds(hpcache)
+            numIds = length(hpcache.Ids);
+            ids = zeros(1, numIds, 'int32');
+            for k = 1:numIds
+                id = hpcache.Ids(k);
+                if ~hpcache.IdHasProcessed(id)
+                    ids(k) = id;
+                end
+            end
+            ids = ids(ids ~= 0);
+        end
     end
 end
 
