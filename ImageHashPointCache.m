@@ -1,7 +1,11 @@
 classdef ImageHashPointCache < handle
     properties (SetAccess = immutable)
         Files FileTable
-        Data containers.Map
+        Ids int32
+        IdToImageHashPoints containers.Map
+    end
+    properties (GetAccess = private, SetAccess = private)
+        IdHasProcessed containers.Map
     end
     properties
         Options AlgorithmOptions {mustBeScalarOrEmpty}
@@ -9,30 +13,34 @@ classdef ImageHashPointCache < handle
     methods
         function hpcache = ImageHashPointCache(ft)
             hpcache.Files = ft;
-            hpcache.Data = containers.Map('KeyType', 'int32', 'ValueType', 'any');
+            hpcache.IdToImageHashPoints = containers.Map('KeyType', 'int32', 'ValueType', 'any');
+            hpcache.Ids = ft.Ids;
+            hpcache.IdHasProcessed = Init_IdHasProcessed(ft.Ids);
         end
         
         function Populate(hpcache, ids)
             if ~exist('ids', 'var') || isempty(ids)
-                ids = hpcache.Files.Ids;
+                ids = hpcache.Ids;
+            elseif ~isa(ids, 'int32')
+                ids = int32(ids);
             end
             numIds = length(ids);
-            infos = GetInfoCellArray(hpcache.Files.IdToInfo, ids);
-            data = cell(1, numIds);
-            opts = hpcache.Options;
-            parfor k = 1:numIds
-                tic;
-                imgProc = ImageHashProcessor(infos{1, k});
-                imgProc.Options = opts;
-                imgProc.LoadImage();
-                imgProc.ColorToInt();
-                imgProc.ComputeHash();
-                imgProc.ComputeMask();
-                data{1, k} = ImageHashPoints(imgProc);
-                toc
-            end
             for k = 1:numIds
-                hpcache.Data(ids(k)) = data{1, k};
+                id = ids(k);
+                if hpcache.IdHasProcessed(id)
+                    ids(k) = 0;
+                end
+            end
+            ids = ids(ids ~= 0);
+            numIds = length(ids);
+            if numIds > 0
+                infoCells = GetInfoCellArray(hpcache.Files.IdToInfo, ids);
+                imageHashPointCells = ProcessAll(infoCells, hpcache.Options);
+                for k = 1:numIds
+                    id = ids(k);
+                    hpcache.IdToImageHashPoints(id) = imageHashPointCells{1, k};
+                    hpcache.IdHasProcessed(id) = true;
+                end
             end
         end
     end
@@ -48,4 +56,66 @@ function infos = GetInfoCellArray(idToInfoMap, ids)
         id = ids(k);
         infos{1, k} = idToInfoMap(id);
     end
+end
+
+function idHasProcessed = Init_IdHasProcessed(ids)
+    mustBeVector(ids);
+    mustBeInteger(ids);
+    idHasProcessed = containers.Map('KeyType', 'int32', 'ValueType', 'logical');
+    for k = 1:length(ids)
+        id = ids(k);
+        idHasProcessed(id) = false;
+    end
+end
+
+function imageHashPointCells = ProcessAll(infoCells, opts)
+    if ~iscell(infoCells)
+        error('infoCells');
+    end
+    mustBeA(opts, 'AlgorithmOptions');
+    numIds = numel(infoCells);
+    for k = 1:numIds
+        mustBeA(infoCells{k}, 'ImageFileInfo');
+    end
+    if opts.UseParallel
+        imageHashPointCells = ProcessAll_Parallel(infoCells, opts);
+    else
+        imageHashPointCells = ProcessAll_Sequential(infoCells, opts);
+    end
+end
+
+function imageHashPointCells = ProcessAll_Parallel(infoCells, opts)
+    numIds = numel(infoCells);
+    imageHashPointCells = cell(size(infoCells));
+    parfor k = 1:numIds
+        tic;
+        imageHashPointCells{k} = ProcessOne(infoCells{k}, opts);
+        toc
+    end
+end
+
+function imageHashPointCells = ProcessAll_Sequential(infoCells, opts)
+    numIds = numel(infoCells);
+    imageHashPointCells = cell(size(infoCells));
+    for k = 1:numIds
+        imageHashPointCells{k} = ProcessOne(infoCells{k}, opts);
+    end
+end
+
+function imageHashPoints = ProcessOne(info, opts)
+    mustBeA(info, 'ImageFileInfo');
+    mustBeA(opts, 'AlgorithmOptions');
+    id = info.Id;
+    fprintf('[%d] Start\n', id);
+    t1 = clock;
+    imgProc = ImageHashProcessor(info);
+    imgProc.Options = opts;
+    imgProc.LoadImage();
+    imgProc.ColorToInt();
+    imgProc.ComputeHash();
+    imgProc.ComputeMask();
+    imageHashPoints = ImageHashPoints(imgProc);
+    t2 = clock;
+    et = etime(t2, t1);
+    fprintf('[%d] Finish (%.3f secs)\n', id, et);
 end
