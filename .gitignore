@@ -32,3 +32,6 @@ octave-workspace
 
 # Scripts marked as nocommit
 nocommit_*.m
+
+# MAT files marked as nocommit
+nocommit_*.mat
