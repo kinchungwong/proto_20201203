@@ -9,6 +9,8 @@ classdef HashStep
         HashChar HashChar {mustBeScalarOrEmpty}
         % The effective input window from combining the current step and all previous steps
         RowColSize(1, 2) {mustBeInteger, mustBePositive} = [1, 1]
+        % The effective input radius from combining the current step and all previous steps
+        RowColRadius(1, 2) {mustBeInteger, mustBeNonnegative} = [0, 0]
         % Number of pixels to exclude from each of the four border sides in the output. See HashMargin class for details.
         Margin HashMargin {mustBeScalarOrEmpty}
         % The stencil coordinates.
@@ -32,6 +34,7 @@ classdef HashStep
                 error('prevStep');
             end
             step.RowColSize = prevSize .* hashChar.RowColSize();
+            step.RowColRadius = (step.RowColSize - 1) / 2;
             thisRadius = hashChar.RowColRadius();
             newMarginRowCol = thisRadius .* prevSize;
             newMargin = HashMargin(newMarginRowCol(1), newMarginRowCol(1), newMarginRowCol(2), newMarginRowCol(2));
