@@ -67,7 +67,7 @@ classdef U32
             if amount ~= floor(amount)
                 error('amount');
             end
-            amount = int32(bitand(uint32(amount), uint32(31)));
+            amount = bitand(int32(amount), int32(31));
             if amount ~= 0
                 result = U32(bitor(bitshift(a.Data, amount), bitshift(a.Data, amount - 32)));
             else
