@@ -14,7 +14,7 @@ function output = Rotate32(output, amount)
         error('amount');
     end
     
-    amount = bitand(uint32(amount), uint32(31));
+    amount = bitand(int32(amount), int32(31));
     if amount ~= 0
         output = bitor(bitshift(output, amount), bitshift(output, amount - 32));
     end
