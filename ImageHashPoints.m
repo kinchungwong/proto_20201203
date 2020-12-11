@@ -8,16 +8,24 @@ classdef ImageHashPoints < handle
         HashColors uint32
     end
     methods
-        function hp = ImageHashPoints(imgProc)
+        function ihps = ImageHashPoints(imgProc)
             if ~isa(imgProc, 'ImageHashProcessor')
                 error('imgProc');
             end
-            hp.Id = imgProc.ImageInfo.Id;
-            hp.ImageInfo = imgProc.ImageInfo;
+            ihps.Id = imgProc.ImageInfo.Id;
+            ihps.ImageInfo = imgProc.ImageInfo;
             sz = [imgProc.ImageInfo.Height, imgProc.ImageInfo.Width];
-            [hp.HashRows, hp.HashCols] = ind2sub(sz, find(imgProc.Mask));
-            [hp.HashValues] = imgProc.Hashed(imgProc.Mask);
-            [hp.HashColors] = imgProc.OriginalInt(imgProc.Mask);
+            [ihps.HashRows, ihps.HashCols] = ind2sub(sz, find(imgProc.Mask));
+            [ihps.HashValues] = imgProc.Hashed(imgProc.Mask);
+            [ihps.HashColors] = imgProc.OriginalInt(imgProc.Mask);
+        end
+        function mask = GetMask(ihps)
+            nrows = ihps.ImageInfo.Height;
+            ncols = ihps.ImageInfo.Width;
+            sz = [nrows, ncols];
+            idx = sub2ind(sz, ihps.HashRows, ihps.HashCols);
+            mask = false(sz);
+            mask(idx) = true;
         end
     end
 end
