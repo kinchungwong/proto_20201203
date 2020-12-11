@@ -19,7 +19,12 @@ classdef ImageHashProcessor < handle
         end
         function ComputeHash(imgProc)
             hvstring = char(imgProc.Options.HashWindowSpec);
-            imgProc.Hashed = Hash2D(imgProc.OriginalInt, hvstring);
+            % troubleshooting
+            if true
+                imgProc.Hashed = HashSpecProcessor(HashSpec(hvstring)).Process(U32(imgProc.OriginalInt)).Data;
+            else
+                imgProc.Hashed = Hash2D(imgProc.OriginalInt, hvstring);
+            end
         end
         function ComputeMask(imgProc)
             frac = imgProc.Options.HashSampleFrac;
