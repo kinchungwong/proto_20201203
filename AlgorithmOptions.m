@@ -1,4 +1,4 @@
-classdef AlgorithmOptions
+classdef AlgorithmOptions < handle
     properties
         UseParallel logical {mustBeScalarOrEmpty} = true
         HashWindowSpec string {mustBeTextScalar} = "hhhhvvv"
