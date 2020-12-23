@@ -18,16 +18,16 @@ classdef ImageHashProcessor < handle
             imgProc.OriginalInt = ConvertColorToInt32(imgProc.OriginalColor);
         end
         function ComputeHash(imgProc)
-            hvstring = char(imgProc.Options.HashWindowSpec);
+            hvstring = char(imgProc.Options.HashOptions.HashWindowSpec);
             hashProc = HashSpecProcessor(HashSpec(hvstring));
             hashProc.StackedOutput = false; % temporary disable
             imgProc.Hashed = hashProc.Process(imgProc.OriginalInt);
         end
         function ComputeMask(imgProc)
-            frac = imgProc.Options.HashSampleFrac;
+            frac = imgProc.Options.HashOptions.HashSampleFrac;
             imgProc.Mask = GetPreMask(imgProc.Hashed, frac);
             imgProc.Mask = GetUniqueMask(imgProc.Hashed, imgProc.Mask);
-            minWindow = imgProc.Options.HashMinWindow;
+            minWindow = imgProc.Options.HashOptions.HashMinWindow;
             imgProc.Mask = GetMinMask(imgProc.Hashed, imgProc.Mask, minWindow);
         end
     end
