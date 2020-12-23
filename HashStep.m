@@ -1,4 +1,4 @@
-classdef HashStep
+classdef HashStep < handle
     % HashStep represents a single step taking out of HashSpec.
     properties (SetAccess = immutable)
         % The previous step (if applicable)

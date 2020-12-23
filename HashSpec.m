@@ -1,4 +1,4 @@
-classdef HashSpec
+classdef HashSpec < handle
     properties (SetAccess = immutable)
         % A string that encodes a combination of stencils for hash computation.
         HashString string {mustBeScalarOrEmpty}
