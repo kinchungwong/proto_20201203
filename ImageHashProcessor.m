@@ -20,7 +20,7 @@ classdef ImageHashProcessor < handle
         function ComputeHash(imgProc)
             hvstring = char(imgProc.Options.HashOptions.HashWindowSpec);
             hashProc = HashSpecProcessor(HashSpec(hvstring));
-            hashProc.StackedOutput = false; % temporary disable
+            hashProc.StackedOutput = imgProc.Options.HashOptions.StackedOutput;
             imgProc.Hashed = hashProc.Process(imgProc.OriginalInt);
         end
         function ComputeMask(imgProc)
