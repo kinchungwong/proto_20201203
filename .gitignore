@@ -35,3 +35,7 @@ nocommit_*.m
 
 # MAT files marked as nocommit
 nocommit_*.mat
+
+# Temporary data
+Temp*/
+Junk*/
