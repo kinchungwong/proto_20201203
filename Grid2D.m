@@ -1,6 +1,7 @@
 classdef Grid2D < handle
-    % Performs a partitioning of a 2D integer-valued input domain
-    % into non-overlapping grid cells in a Cartesian way.
+% Performs a partitioning of a 2D integer-valued input domain
+% into non-overlapping grid cells in a Cartesian way.
+%
     properties (SetAccess = immutable)
         % Size of the input domain of integer coordinates
         % InputSize = [inputRowCount, inputColCount]
@@ -56,7 +57,7 @@ classdef Grid2D < handle
             rowMax = g.RowMarks(cellRowIndex + 1) - 1;
             colMin = g.ColMarks(cellColIndex);
             colMax = g.ColMarks(cellColIndex + 1) - 1;
-            c = GridCell(rowMin, rowMax, colMin, colMax, g, cellRowIndex, cellColIndex);
+            c = GridCellFast(rowMin, rowMax, colMin, colMax, g, cellRowIndex, cellColIndex);
         end
 
         function c = GetApproxCellBounds(g, cellRowIndex, cellColIndex)
@@ -87,11 +88,11 @@ classdef Grid2D < handle
             cellRowIndex = min(cellRowIndex, g.GridSize(1));
             cellColIndex = max(cellColIndex, 1);
             cellColIndex = min(cellColIndex, g.GridSize(2));
-            rowMin = interp1(1:g.GridSize(1), g.RowMarks(1:end-1), min(cellRowIndex));
-            rowMax = interp1(1:g.GridSize(1), g.RowMarks(2:end), max(cellRowIndex)) - 1;
-            colMin = interp1(1:g.GridSize(2), g.ColMarks(1:end-1), min(cellColIndex));
-            colMax = interp1(1:g.GridSize(2), g.ColMarks(2:end), max(cellColIndex)) - 1;
-            c = GridCell(round(rowMin), round(rowMax), round(colMin), round(colMax), g, cellRowIndex, cellColIndex);
+            rowMin = Internal_Interp_rounded(1:g.GridSize(1), g.RowMarks(1:end-1), min(cellRowIndex));
+            rowMax = Internal_Interp_rounded(1:g.GridSize(1), g.RowMarks(2:end), max(cellRowIndex)) - 1;
+            colMin = Internal_Interp_rounded(1:g.GridSize(2), g.ColMarks(1:end-1), min(cellColIndex));
+            colMax = Internal_Interp_rounded(1:g.GridSize(2), g.ColMarks(2:end), max(cellColIndex)) - 1;
+            c = GridCellFast(rowMin, rowMax, colMin, colMax, g, cellRowIndex, cellColIndex);
         end
         
         function m = AsLabelMatrix(g)
@@ -291,4 +292,13 @@ function [marks] = Internal_InitMarks_OneDim(inputLength, numCells)
         numCells = 1;
     end
     marks = 1 + round((0:numCells) * (double(inputLength)/double(numCells)));
+end
+
+function vq = Internal_Interp_rounded(x, v, xq)
+    tfExact = logical(x == xq);
+    if nnz(tfExact) == 1
+        vq = v(tfExact);
+    else
+        vq = round(interp1(x, v, xq));
+    end
 end

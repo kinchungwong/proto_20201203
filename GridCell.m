@@ -1,16 +1,11 @@
 classdef GridCell
+% GridCell is a subrectangle into a 2D matrix that has been partitioned
+% into approximately evenly-sized cells by Grid2D.
+%
     properties (SetAccess = immutable)
-        % The first row coordinate of the grid cell. Inclusive.
-        RowMin {mustBeInteger, mustBeScalarOrEmpty}
-        
-        % The last row coordinate of the grid cell. Inclusive.
-        RowMax {mustBeInteger, mustBeScalarOrEmpty}
-        
-        % The first column coordinate of the grid cell. Inclusive.
-        ColMin {mustBeInteger, mustBeScalarOrEmpty}
-        
-        % The last column coordinate of the grid cell. Inclusive.
-        ColMax {mustBeInteger, mustBeScalarOrEmpty}
+        % The integer-valued bounds, 
+        % defined as [RowMin, RowMax, ColMin, ColMax]
+        Bounds(1, 4) int32 = [0, 0, 0, 0]
 
         % The 2D Grid definition. This property may be unavailable.
         Grid2D Grid2D {mustBeScalarOrEmpty}
@@ -25,6 +20,24 @@ classdef GridCell
         % depending on how the grid cell is defined.
         ColIndex {mustBeNumeric, mustBeReal}
     end
+    
+    properties (Dependent)
+        % The first row coordinate of the grid cell. Inclusive.
+        RowMin
+        
+        % The last row coordinate of the grid cell. Inclusive.
+        RowMax
+        
+        % The first column coordinate of the grid cell. Inclusive.
+        ColMin
+        
+        % The last column coordinate of the grid cell. Inclusive.
+        ColMax
+
+        % Size of the cell, defined as [RowMax-RowMin+1, ColMax-ColMin+1].
+        CellSize
+    end
+    
     methods
         function c = GridCell(rowMin, rowMax, colMin, colMax, g, ri, ci)
             if ~isscalar(rowMin) || ~isnumeric(rowMin) || ~isreal(rowMin) 
@@ -45,10 +58,7 @@ classdef GridCell
             if colMin > colMax
                 error('colMin, colMax');
             end
-            c.RowMin = rowMin;
-            c.RowMax = rowMax;
-            c.ColMin = colMin;
-            c.ColMax = colMax;
+            c.Bounds = [rowMin, rowMax, colMin, colMax];
             if exist('g', 'var')
                 c.Grid2D = g;
             end
@@ -65,17 +75,38 @@ classdef GridCell
         end
         
         function dest = WriteTo(c, dest, dataToWrite)
+            warning("Warning: GridCell.WriteTo() returns modified matrix as output.");
             dest(c.RowMin:c.RowMax, c.ColMin:c.ColMax, :) = dataToWrite;
         end
         
-        function csz = CellSize(c)
+        function rowMin = get.RowMin(c)
+            rowMin = c.Bounds(1);
+        end
+
+        function rowMax = get.RowMax(c)
+            rowMax = c.Bounds(2);
+        end
+
+        function colMin = get.ColMin(c)
+            colMin = c.Bounds(3);
+        end
+
+        function colMax = get.ColMax(c)
+            colMax = c.Bounds(4);
+        end
+        
+        function csz = get.CellSize(c)
             % Returns the size of this GridCell.
             % Usage
             % ... csz = CellSize(c)
             % where 
             % ... csz = [rowCount, colCount]
-            rowCount = c.RowMax - c.RowMin + 1;
-            colCount = c.ColMax - c.ColMin + 1;
+            rowMin = c.Bounds(1);
+            rowMax = c.Bounds(2);
+            colMin = c.Bounds(3);
+            colMax = c.Bounds(4);
+            rowCount = rowMax - rowMin + 1;
+            colCount = colMax - colMin + 1;
             csz = [rowCount, colCount];
         end
     end
