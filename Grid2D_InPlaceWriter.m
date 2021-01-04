@@ -39,6 +39,7 @@ classdef Grid2D_InPlaceWriter < handle
 %
     properties (SetAccess = immutable)
         Grid2D Grid2D {mustBeScalarOrEmpty}
+        Mode(1, 1) char = 'w'
     end
     
     properties (Dependent)
@@ -48,23 +49,38 @@ classdef Grid2D_InPlaceWriter < handle
     
     properties (Access = private)
         InternalResult
+        FnMode(1, 1) function_handle = @(a, b)(b)
     end
     
     methods
-        function gipw = Grid2D_InPlaceWriter(g, finit)
-            % Initializes with a Grid2D and a callback that creates a result matrix.
-            if ~isa(g, "Grid2D")
-                error('g');
+        function gipw = Grid2D_InPlaceWriter(g, finit, mode)
+            arguments
+                g(1, 1)     Grid2D
+                finit(1, 1) function_handle
+                mode(1, 1)  char
             end
-            if ~isa(finit, "function_handle")
-                error('finit');
-            end
-            gipw.Grid2D = g;
-            gipw.InternalResult = finit();
-            sz = size(gipw.InternalResult);
-            if ~isequal(sz, gipw.Grid2D.InputSize)
+            result = finit();
+            sz = size(result);
+            gsz = g.InputSize;
+            if ~isequal(sz, gsz)
                 error('sz');
             end
+            gipw.Grid2D = g;
+            gipw.InternalResult = result;
+            gipw.Mode = mode;
+            switch mode
+                case 'w'
+                    fnMode = @(a, b)(b);
+                case '&'
+                    fnMode = @(a, b)(bitand(a, b));
+                case '|'
+                    fnMode = @(a, b)(bitor(a, b));
+                case '^'
+                    fnMode = @(a, b)(bitxor(a, b));
+                otherwise
+                    error('mode');
+            end
+            gipw.FnMode = fnMode;
         end
         
         function Write(gipw, c, data)
@@ -82,7 +98,13 @@ classdef Grid2D_InPlaceWriter < handle
             if ~isequal(dsz, csz)
                 error('sz');
             end
-            gipw.InternalResult(c.RowMin:c.RowMax, c.ColMin:c.ColMax) = data;
+            r1 = c.RowMin;
+            r2 = c.RowMax;
+            c1 = c.ColMin;
+            c2 = c.ColMax;
+            fnMode = gipw.FnMode;
+            data = fnMode(gipw.InternalResult(r1:r2, c1:c2), data);
+            gipw.InternalResult(r1:r2, c1:c2) = data;
         end
         
         function Result = get.Result(gipw)
