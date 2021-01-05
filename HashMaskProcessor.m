@@ -104,7 +104,7 @@ function Internal_ComputeComposite(hmp, input)
     gcuQ = logical(GetMask_Unique_ByGridCell(hmp.HashedQ, g, 2, 2, dn));
     gcuH = logical(GetMask_Unique_ByGridCell(hmp.HashedH, g, 2, 2, dn));
     gcuV = logical(GetMask_Unique_ByGridCell(hmp.HashedV, g, 2, 2, dn));
-    gcu = logical(gcuQ | gcuH | gcuV);
+    gcu = logical(gcuQ & gcuH & gcuV);
 
     % ---
     % Perform an approximately evenly-spaced sub-selection of hash values
@@ -129,5 +129,5 @@ function Internal_ComputeComposite(hmp, input)
 
     % ---
     % ---
-    hmp.Mask = lm;
+    hmp.Mask = lm & dn & gcu;
 end
