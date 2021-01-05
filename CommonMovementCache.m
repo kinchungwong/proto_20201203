@@ -1,11 +1,28 @@
 classdef CommonMovementCache < handle
     % A cache for CMC (Common Movement Classifier) with a list of IDs as key.
+    
     properties (SetAccess = immutable)
+        Ids(1, :) int32
         Data containers.Map {mustBeScalarOrEmpty}
     end
+    
+    properties (Dependent)
+        PresenceMask
+    end
+    
+    properties (Access = private)
+        InternalMask(:, :) logical = []
+        InternalRowCount(1, 1) int32 = 0
+    end
+    
     methods
-        function cache = CommonMovementCache()
+        function cache = CommonMovementCache(ids)
+            arguments
+                ids(1, :) int32
+            end
             cache.Data = containers.Map('KeyType', 'char', 'ValueType', 'any');
+            cache.Ids = ids;
+            cache.InternalMask = false(100, length(ids));
         end
         
         function Add(cache, cmc)
@@ -17,6 +34,7 @@ classdef CommonMovementCache < handle
             ks = stc_IntVecAsKey(ids);
             if ~cache.Data.isKey(ks)
                 cache.Data(ks) = cmc;
+                InsertPresenceMaskRow(cache, ids);
             else
                 strCmcIds = num2str(ids, " %d");
                 sprintf("CommonMovementCache already contains [%s], not inserted.\n", strCmcIds);
@@ -32,6 +50,10 @@ classdef CommonMovementCache < handle
             else
                 cmc = CommonMovementClassifier.empty();
             end
+        end
+        
+        function mask = get.PresenceMask(cache)
+            mask = cache.InternalMask(1:cache.InternalRowCount, :);
         end
         
         function c = cell(cache)
@@ -85,4 +107,27 @@ function intVec = stc_ParseIntVecKey(ks)
         error('intVec');
     end
     intVec = int32(intVec);
+end
+
+function InsertPresenceMaskRow(cache, newIds)
+    arguments
+        cache(1, 1) CommonMovementCache
+        newIds(1, :) int32
+    end
+    
+    % Compute the logical presence indicator of ids
+    allIds = cache.Ids;
+    maskRow = logical(ismember(allIds, newIds));
+    
+    % Assign row ID for the presence indicator matrix
+    newRowId = cache.InternalRowCount + 1;
+    
+    % Double the size of the table until it can fit the new row
+    while newRowId > size(cache.InternalMask, 1)
+        cache.InternalMask = cat(1, cache.InternalMask, false(size(cache.InternalMask)));
+    end
+    
+    % Insert the row into the presence indicator matrix
+    cache.InternalMask(newRowId, :) = maskRow;
+    cache.InternalRowCount = newRowId;
 end

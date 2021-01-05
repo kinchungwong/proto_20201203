@@ -25,7 +25,7 @@ classdef AdaptiveMovementClassifier < handle
             amc.ImageHashPointCache = hpcache;
             amc.Options = opts;
             amc.Ids = hpcache.Ids;
-            amc.Cache = CommonMovementCache();
+            amc.Cache = CommonMovementCache(hpcache.Ids);
         end
         function [cmcIds, deltas, votes] = ProcessStep(amc)
             cmcIds = [];
