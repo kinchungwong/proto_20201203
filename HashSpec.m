@@ -17,15 +17,11 @@ classdef HashSpec < handle
     end
     methods
         function spec = HashSpec(hashString)
-            if isstring(hashString)
-                ss = hashString;
-                cc = char(hashString);
-            elseif ischar(hashString) && isrow(hashString)
-                cc = hashString;
-                ss = string(hashString);
-            else
-                error('hashString');
+            arguments
+                hashString(1, 1) string
             end
+            ss = string(hashString);
+            cc = char(hashString);
             len = length(cc);
             spec.HashString = ss;
             spec.StepCount = len;
