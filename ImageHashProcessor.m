@@ -18,17 +18,36 @@ classdef ImageHashProcessor < handle
             imgProc.OriginalInt = ConvertColorToInt32(imgProc.OriginalColor);
         end
         function ComputeHash(imgProc)
-            hvstring = char(imgProc.Options.HashOptions.HashWindowSpec);
-            hashProc = HashSpecProcessor(HashSpec(hvstring));
-            hashProc.StackedOutput = imgProc.Options.HashOptions.StackedOutput;
-            imgProc.Hashed = hashProc.Process(imgProc.OriginalInt);
+            if isempty(imgProc.Options.HM_Options)
+                % Previous code 
+                % ... one hash plane; 
+                % ... mask logic similar to C# 2020 November project
+                hvstring = char(imgProc.Options.HashOptions.HashWindowSpec);
+                hashProc = HashSpecProcessor(HashSpec(hvstring));
+                hashProc.StackedOutput = imgProc.Options.HashOptions.StackedOutput;
+                imgProc.Hashed = hashProc.Process(imgProc.OriginalInt);
+            else
+                % New code (2021-01-05)
+                % ... three hash planes (sQuare, Horz, Vert)
+                hashProc = HashMaskProcessor(imgProc.Options.HM_Options);
+                hashProc.Process(imgProc);
+                imgProc.Hashed = hashProc.Hashed;
+                imgProc.Mask = hashProc.Mask;
+            end
         end
         function ComputeMask(imgProc)
-            frac = imgProc.Options.HashOptions.HashSampleFrac;
-            imgProc.Mask = GetPreMask(imgProc.Hashed, frac);
-            imgProc.Mask = GetUniqueMask(imgProc.Hashed, imgProc.Mask);
-            minWindow = imgProc.Options.HashOptions.HashMinWindow;
-            imgProc.Mask = GetMinMask(imgProc.Hashed, imgProc.Mask, minWindow);
+            if isempty(imgProc.Options.HM_Options)
+                % Previous code 
+                frac = imgProc.Options.HashOptions.HashSampleFrac;
+                imgProc.Mask = GetPreMask(imgProc.Hashed, frac);
+                imgProc.Mask = GetUniqueMask(imgProc.Hashed, imgProc.Mask);
+                minWindow = imgProc.Options.HashOptions.HashMinWindow;
+                imgProc.Mask = GetMinMask(imgProc.Hashed, imgProc.Mask, minWindow);
+            else
+                % New code (2021-01-05)
+                % ... nothing to do; 
+                % ... mask already computed in previous step (ComputeHash)
+            end
         end
     end
 end
