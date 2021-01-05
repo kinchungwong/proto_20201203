@@ -7,11 +7,24 @@ classdef CommonMovementCache < handle
     end
     
     properties (Dependent)
+        % A logical matrix indicating the presence of image IDs in a
+        % particular record. 
+        %
+        % Each column corresponds to one image ID. The column index
+        % is determined with find(Ids == id).
+        % 
+        % Each row corresponds to one CommonMovementClassifier.
+        % 
         PresenceMask
+        
+        % A column cell vector, each cell containing the image IDs 
+        % consumed in a particular run of CommonMovementClassifier.
+        Keys
     end
     
     properties (Access = private)
         InternalMask(:, :) logical = []
+        InternalKeys
         InternalRowCount(1, 1) int32 = 0
     end
     
@@ -23,6 +36,7 @@ classdef CommonMovementCache < handle
             cache.Data = containers.Map('KeyType', 'char', 'ValueType', 'any');
             cache.Ids = ids;
             cache.InternalMask = false(100, length(ids));
+            cache.InternalKeys = cell(100, 1);
         end
         
         function Add(cache, cmc)
@@ -54,6 +68,10 @@ classdef CommonMovementCache < handle
         
         function mask = get.PresenceMask(cache)
             mask = cache.InternalMask(1:cache.InternalRowCount, :);
+        end
+
+        function keys = get.Keys(cache)
+            keys = cache.InternalKeys(1:cache.InternalRowCount, :);
         end
         
         function c = cell(cache)
@@ -127,7 +145,12 @@ function InsertPresenceMaskRow(cache, newIds)
         cache.InternalMask = cat(1, cache.InternalMask, false(size(cache.InternalMask)));
     end
     
+    while newRowId > length(cache.InternalKeys)
+        cache.InternalKeys = cat(1, cache.InternalKeys, cell(size(cache.InternalKeys)));
+    end
+    
     % Insert the row into the presence indicator matrix
     cache.InternalMask(newRowId, :) = maskRow;
+    cache.InternalKeys{newRowId} = newIds;
     cache.InternalRowCount = newRowId;
 end
