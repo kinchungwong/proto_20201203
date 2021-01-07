@@ -8,8 +8,10 @@ classdef AdaptiveMovementClassifier < handle
         WhichPass(1, 1) int32 = 0
         HasFinished(1, 1) logical = false
         Cache CommonMovementCache {mustBeScalarOrEmpty}
+        FirstPassCache CommonMovementCache {mustBeScalarOrEmpty}
+        SecondPassCache CommonMovementCache {mustBeScalarOrEmpty}
     end
-    properties (GetAccess = private, SetAccess = private)
+    properties (Access = private)
         idsel IdSelector {mustBeScalarOrEmpty}
     end
     properties
@@ -25,7 +27,6 @@ classdef AdaptiveMovementClassifier < handle
             amc.ImageHashPointCache = hpcache;
             amc.Options = opts;
             amc.Ids = hpcache.Ids;
-            amc.Cache = CommonMovementCache(hpcache.Ids);
         end
         function [cmcIds, deltas, votes] = ProcessStep(amc)
             cmcIds = [];
@@ -47,6 +48,14 @@ classdef AdaptiveMovementClassifier < handle
                     amc.idsel = IdSelector.empty();
                 end
             end
+            if amc.WhichPass == 1 && isempty(amc.FirstPassCache)
+                amc.FirstPassCache = CommonMovementCache(amc.Ids);
+                amc.Cache = amc.FirstPassCache;
+            elseif amc.WhichPass == 2 && isempty(amc.SecondPassCache)
+                amc.SecondPassCache = CommonMovementCache(amc.Ids);
+                amc.Cache = amc.SecondPassCache;
+            end
+
             if amc.Logging
                 arrStrThroughPass = ["First Pass", "Second Pass"];
                 strThroughPass = arrStrThroughPass(amc.WhichPass);
