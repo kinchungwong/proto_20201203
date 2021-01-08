@@ -16,6 +16,14 @@ classdef MovementGraph < handle
         % Complete list of image IDs
         Ids(:, 1) int32
     end
+
+    properties
+        % If allowMultiDeltas is true, there can be multiple edges between a
+        % pair of images, each edge representing a different row-column delta.
+        % If allowMultiDeltas is false, at most one edge (the highest weight) 
+        % will be retained between a pair of images after filtering.
+        AllowMultiDeltas(1, 1) logical = true
+    end
     
     properties (Access = private)
         % graphEdgeData contains individual records of graph edges and
@@ -300,7 +308,7 @@ function edgeData = Internal_Process(mg)
     % that the GraphEdgeData matrix is always lexicographically sorted.
     % This is handled by Internal_DedupeEdgeData as well.
     % 
-    edgeData = Internal_DedupeEdgeData(edgeData);
+    edgeData = Internal_DedupeEdgeData(edgeData, mg.AllowMultiDeltas);
 end
 
 function [bestVote, bestDeltas] = BestMovement(cmc)
@@ -380,9 +388,10 @@ function [g, cc] = Internal_CreateSubgraph(mg, ids, ids2)
     cc = conncomp(mg.G, "OutputForm", "cell");
 end
 
-function edgeData = Internal_DedupeEdgeData(edgeData)
+function edgeData = Internal_DedupeEdgeData(edgeData, allowMultiDeltas)
     arguments
         edgeData(:, 5) int32
+        allowMultiDeltas(1, 1) logical
     end
     count = size(edgeData, 1);
     if count == 0
@@ -390,9 +399,24 @@ function edgeData = Internal_DedupeEdgeData(edgeData)
     end
     a = "ascend";
     d = "descend";
-    sortKeys = [1, 2, 3, 4, 5];
-    sortDirs = [a, a, a, a, d];
-    edgeData = sortrows(edgeData, sortKeys, sortDirs);
+
+    % ---
+    % If allowMultiDeltas is true, there can be multiple edges between a
+    % pair of images, each edge representing a different row-column delta.
+    % If allowMultiDeltas is false, at most one edge (the highest weight) 
+    % will be retained between a pair of images after filtering.
+    % ---
+    if allowMultiDeltas
+        sortKeys = [1, 2, 3, 4, 5];
+        sortDirs = [a, a, a, a, d];
+        edgeData = sortrows(edgeData, sortKeys, sortDirs);
+        fnDupe = @(rowData1, rowData2)(isequal(rowData1(:, 1:4), rowData2(:, 1:4)));
+    else
+        sortKeys = [1, 2, 5, 3, 4];
+        sortDirs = [a, a, d, a, a];
+        edgeData = sortrows(edgeData, sortKeys, sortDirs);
+        fnDupe = @(rowData1, rowData2)(isequal(rowData1(:, 1:2), rowData2(:, 1:2)));
+    end
     
     % ---
     % Compact the rows of the edgeData matrix, so that, 
@@ -402,7 +426,7 @@ function edgeData = Internal_DedupeEdgeData(edgeData)
     % ---
     outCount = 1;
     for kin = 2:count
-        if isequal(edgeData(kin, 1:4), edgeData(outCount, 1:4))
+        if fnDupe(edgeData(kin, :), edgeData(outCount, :))
             continue;
         else
             outCount = outCount + 1;
