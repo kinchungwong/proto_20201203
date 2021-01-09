@@ -321,7 +321,7 @@ function [bestVote, bestDeltas] = BestMovement(cmc)
         cmc(1, 1) CommonMovementClassifier
     end
     votes = cmc.Votes;
-    deltas = cmc.Deltas;
+    deltas = cmc.UniqueDeltas;
     numMoves = length(votes);
     bestVote = 0;
     bestDeltas = [];
